@@ -9,15 +9,32 @@ const status = ref('ready'); // 'ready', 'scanning', 'result'
 const progress = ref(0);
 const analyzingMessage = ref('연애세포 스캔 중...');
 const resultData = ref({ percent: 0, comment: '' });
+const isSmiling = ref(true); // 실시간 미소 상태
+let expressionLoop = null;
 
 const analyzingMessages = [
-  "연애세포 스캔 중...",
-  "호감도 분석 중...",
-  "매력 지수 계산 중...",
-  "연합 데이터 수집 중...",
-  "AI 감정 분석 중...",
-  "결과 도출 중..."
+  "진심 어린 미소를 보여주세요...",
+  "안 웃으면 댕댕이가 공격합니다!",
+  "입꼬리 체크 중...",
+  "가식 여부 판별 중...",
+  "얼굴 근육 움직임 분석 중...",
+  "거의 다 왔습니다..."
 ];
+
+// 실시간 미소 감지 루프
+const startExpressionLoop = () => {
+  const check = async () => {
+    if (status.value !== 'scanning') return;
+    
+    const faceData = await cameraRef.value?.detectFace();
+    if (faceData) {
+      // 미소 감지 (happy 확률이 높을 때만 true)
+      isSmiling.value = faceData.expression === 'happy' && parseFloat(faceData.probability) > 50;
+    }
+    expressionLoop = requestAnimationFrame(check);
+  };
+  expressionLoop = requestAnimationFrame(check);
+};
 
 const startScan = async () => {
   if (!cameraRef.value?.isModelLoaded) {
@@ -28,6 +45,9 @@ const startScan = async () => {
   status.value = 'scanning';
   progress.value = 0;
   analyzingMessage.value = analyzingMessages[0];
+  isSmiling.value = true;
+  
+  startExpressionLoop();
   
   const fallbackPercent = Math.floor(Math.random() * 100) + 1;
   
@@ -40,14 +60,17 @@ const startScan = async () => {
     if (progress.value >= 100) {
       progress.value = 100;
       clearInterval(interval);
+      cancelAnimationFrame(expressionLoop);
       completeScan(fallbackPercent);
     }
-  }, 80);
+  }, 100);
 };
 
 const completeScan = async (fallbackPercent) => {
   const faceData = await cameraRef.value?.detectFace();
-  const rawResult = await generateLoveResult(fallbackPercent, faceData);
+  // 최종 결과 전송 시 '실시간 미소 여부'를 포함해서 전달
+  const finalFaceData = faceData ? { ...faceData, wasSmiling: isSmiling.value } : null;
+  const rawResult = await generateLoveResult(fallbackPercent, finalFaceData);
   
   let finalPercent = fallbackPercent;
   let finalComment = rawResult;
@@ -69,6 +92,7 @@ const completeScan = async (fallbackPercent) => {
   }, 200);
 };
 
+
 const resetScan = () => {
   status.value = 'ready';
   progress.value = 0;
@@ -86,6 +110,7 @@ const resetScan = () => {
         :progress="progress"
         :analyzing-message="analyzingMessage"
         :result="resultData"
+        :is-smiling="isSmiling"
         @start-scan="startScan"
         @reset-scan="resetScan"
       />
