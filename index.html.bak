@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연애 스캐너</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #111; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, sans-serif; }
+#app { position: relative; width: 100%; max-width: 400px; aspect-ratio: 9/16; background: #000; border-radius: 16px; overflow: hidden; }
+#video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+#canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+#overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 16px; pointer-events: none; }
+.hud-top { display: flex; justify-content: space-between; align-items: center; }
+.hud-badge { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 4px 10px; color: #fff; font-size: 11px; letter-spacing: 1px; }
+.rec-dot { width: 8px; height: 8px; border-radius: 50%; background: #e24b4a; display: inline-block; margin-right: 6px; animation: blink 1s infinite; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+.scan-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -60%); width: 200px; height: 200px; pointer-events: none; }
+.corner { position: absolute; width: 24px; height: 24px; border-color: #00ffcc; border-style: solid; }
+.tl { top: 0; left: 0; border-width: 2px 0 0 2px; }
+.tr { top: 0; right: 0; border-width: 2px 2px 0 0; }
+.bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
+.br { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
+.scan-line { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #00ffcc, transparent); top: 0; animation: scanMove 2s linear infinite; }
+@keyframes scanMove { 0% { top: 0; opacity: 1; } 100% { top: 100%; opacity: 0.3; } }
+.hud-bottom { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+#result-box { background: rgba(0,0,0,0.75); border: 1px solid rgba(0,255,204,0.5); border-radius: 10px; padding: 14px 20px; text-align: center; width: 100%; display: none; }
+.result-label { font-size: 11px; color: #00ffcc; letter-spacing: 2px; margin-bottom: 6px; }
+.result-percent { font-size: 48px; font-weight: 500; color: #fff; line-height: 1; }
+.result-comment { font-size: 13px; color: rgba(255,255,255,0.8); margin-top: 8px; }
+#scan-btn { background: rgba(0,255,204,0.15); border: 1.5px solid #00ffcc; border-radius: 50px; color: #00ffcc; font-size: 14px; font-weight: 500; padding: 12px 32px; cursor: pointer; pointer-events: all; letter-spacing: 1px; transition: background 0.2s; }
+#scan-btn:hover { background: rgba(0,255,204,0.25); }
+#scan-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.analyzing { display: none; text-align: center; }
+.analyzing-text { color: #00ffcc; font-size: 12px; letter-spacing: 2px; }
+.progress-bar { width: 100%; height: 2px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.progress-fill { height: 100%; background: #00ffcc; width: 0%; transition: width 0.05s linear; }
+#no-camera { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #fff; text-align: center; padding: 24px; gap: 12px; }
+#no-camera p { font-size: 13px; color: rgba(255,255,255,0.6); }
+</style>
+</head>
+<body>
+<div id="app">
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="canvas"></canvas>
+
+  <div id="overlay">
+    <div class="hud-top">
+      <span class="hud-badge"><span class="rec-dot"></span>LIVE</span>
+      <span class="hud-badge">LOVE SCANNER v1.0</span>
+    </div>
+
+    <div class="scan-frame" id="scan-frame">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+      <div class="scan-line"></div>
+    </div>
+
+    <div class="hud-bottom">
+      <div id="result-box">
+        <div class="result-label">오늘 연애할 확률</div>
+        <div class="result-percent" id="result-num">0%</div>
+        <div class="result-comment" id="result-comment"></div>
+      </div>
+      <div class="analyzing" id="analyzing">
+        <div class="analyzing-text" id="analyzing-text">연애세포 스캔 중...</div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
+      <button id="scan-btn">스캔 시작</button>
+    </div>
+  </div>
+
+  <div id="no-camera">
+    <div style="font-size: 32px;">📷</div>
+    <p>카메라 권한을 허용해주세요<br>브라우저 주소창 옆 카메라 아이콘을 눌러 허용 후 새로고침</p>
+  </div>
+</div>
+
+<script>
+const comments = [
+  [[0,5], ["연애세포 전멸", "희망이 없다", "핸드폰이나 충전해", "고독의 달인", "이불이 친구다"]],
+  [[6,20], ["기적이 필요해", "운이 따라줘야", "연애세포 응급실행", "기도가 답이다", "소개팅 앱 열어봐"]],
+  [[21,40], ["조금만 더 노력해", "가능성은 있어", "먼저 말 걸어봐", "오늘 외출은 해봐", "기회는 스스로 만드는 것"]],
+  [[41,60], ["반반이야 반반", "운명이 고민 중", "적극적으로 가!", "타이밍이 관건", "지금이 찬스일 수도"]],
+  [[61,80], ["오늘 빛나고 있어", "매력 폭발 중", "상대방도 느끼고 있어", "연락 한번 해봐", "오늘 승산 있다"]],
+  [[81,100], ["오늘 주인공은 너", "연애운 MAX", "그냥 나가기만 해", "상대방이 기다리고 있어", "오늘 안 되면 언제 돼"]]
+];
+
+function getComment(pct) {
+  for (const [range, msgs] of comments) {
+    if (pct >= range[0] && pct <= range[1]) {
+      return msgs[Math.floor(Math.random() * msgs.length)];
+    }
+  }
+  return "";
+}
+
+const messages = [
+  "연애세포 스캔 중...",
+  "호감도 분석 중...",
+  "매력 지수 계산 중...",
+  "연애운 데이터 수집 중...",
+  "AI 감정 분석 중...",
+  "결과 도출 중..."
+];
+
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    document.getElementById('video').srcObject = stream;
+  } catch(e) {
+    document.getElementById('video').style.display = 'none';
+    document.getElementById('canvas').style.display = 'none';
+    document.getElementById('no-camera').style.display = 'flex';
+    document.getElementById('scan-btn').style.display = 'none';
+    document.getElementById('scan-frame').style.display = 'none';
+  }
+}
+
+document.getElementById('scan-btn').addEventListener('click', function() {
+  const btn = this;
+  const analyzing = document.getElementById('analyzing');
+  const resultBox = document.getElementById('result-box');
+  const analyzingText = document.getElementById('analyzing-text');
+  const fill = document.getElementById('progress-fill');
+
+  btn.disabled = true;
+  resultBox.style.display = 'none';
+  analyzing.style.display = 'block';
+
+  let progress = 0;
+  let msgIdx = 0;
+  analyzingText.textContent = messages[0];
+
+  const interval = setInterval(() => {
+    progress += Math.random() * 4 + 1;
+    if (progress > 100) progress = 100;
+    fill.style.width = Math.round(progress) + '%';
+
+    const newIdx = Math.min(Math.floor(progress / 17), messages.length - 1);
+    if (newIdx !== msgIdx) {
+      msgIdx = newIdx;
+      analyzingText.textContent = messages[msgIdx];
+    }
+
+    if (progress >= 100) {
+      clearInterval(interval);
+      setTimeout(() => {
+        analyzing.style.display = 'none';
+        const pct = Math.floor(Math.random() * 100) + 1;
+        document.getElementById('result-num').textContent = pct + '%';
+        document.getElementById('result-comment').textContent = getComment(pct);
+        resultBox.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '다시 스캔';
+        fill.style.width = '0%';
+      }, 300);
+    }
+  }, 60);
+});
+
+startCamera();
+</script>
+</body>
+</html>
