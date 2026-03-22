@@ -13,12 +13,12 @@ const isSmiling = ref(true); // 실시간 미소 상태
 let expressionLoop = null;
 
 const analyzingMessages = [
-  "얼굴 연애 수치 감지 중...",
-  "심장 두근거림 분석 중...",
-  "솔직한 감정 표출 여부 확인 중...",
-  "가식 필터 적용 중...",
-  "연애 세포 활성도 측정 중...",
-  "최종 확률 계산 중..."
+  "진심 어린 미소를 보여주세요...",
+  "안 웃으면 댕댕이가 공격합니다!",
+  "입꼬리 체크 중...",
+  "가식 여부 판별 중...",
+  "얼굴 근육 움직임 분석 중...",
+  "거의 다 왔습니다..."
 ];
 
 // 실시간 미소 감지 루프
@@ -135,7 +135,6 @@ body {
   background: #111;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   height: 100vh;
-  height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -205,18 +204,11 @@ body {
 }
 
 @media (max-width: 768px) {
-  .app-container {
-    align-items: flex-start;
-  }
-
   .mobile-viewport {
     width: 100vw;
-    width: 100dvw;
     height: 100vh;
-    height: 100dvh;
     max-width: none;
     aspect-ratio: auto;
-    box-shadow: none;
   }
 }
 </style>
