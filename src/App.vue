@@ -59,7 +59,7 @@ const startScan = async () => {
   startExpressionLoop();
   
   const interval = setInterval(() => {
-    progress.value += Math.random() * 5 + 2;
+    progress.value += Math.random() * 1.5 + 0.5;
     
     const msgIndex = Math.min(Math.floor((progress.value / 100) * analyzingMessages.length), analyzingMessages.length - 1);
     analyzingMessage.value = cameraRef.value?.isModelLoaded ? analyzingMessages[msgIndex] : "AI 모델 로딩 중...";

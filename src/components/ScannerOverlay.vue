@@ -30,18 +30,17 @@ const handleAction = () => {
   }
 };
 
-// 킹받는 문구 목록 (웃지 않을 때)
+// 긍정적인 미소 유도 문구 (미소 짓지 않을 때 노출)
 const angryMessages = [
-  "😤 웃어라 했잖아",
-  "🙄 이게 웃는 거임?",
-  "💀 표정 관리 좀",
-  "😒 진짜 킹받네",
-  "🤬 지금 장난함?",
-  "😑 얼굴에 뭐 붙었냐",
+  "✨ 미소로 마주 앉은 당신은 훨씬 더 예뻐 보일 거예요",
+  "😊 살짝 띤 미소가 당신의 매력을 200% 더해줍니다",
+  "👀 웃는 모습에서 느껴지는 따뜻한 분위기가 좋아요",
+  "💘 당신의 미소는 누군가에게 설렘이 될 수 있습니다",
 ];
 
 const getAngryMessage = () => {
-  const idx = Math.floor((props.progress / 100) * angryMessages.length);
+  // 33% 단위로 텍스트 변화 (약 2.5초마다)
+  const idx = Math.floor((props.progress / 33.4));
   return angryMessages[Math.min(idx, angryMessages.length - 1)];
 };
 </script>
@@ -87,7 +86,7 @@ const getAngryMessage = () => {
       <div v-if="props.status === 'result'" class="result-box judgment-box">
         <div class="result-tag">💘 오늘의 연애 확률 분석 완료</div>
         <p class="result-label">연애 성공 확률</p>
-        <h1 class="result-percent">{{ props.result.percent }}%</h1>
+        <h1 class="result-percent">{{ Math.round(props.result.percent) }}%</h1>
         <p class="result-comment">"{{ props.result.comment }}"</p>
       </div>
 
@@ -135,13 +134,13 @@ const getAngryMessage = () => {
   top: 18%;
   left: 50%;
   transform: translateX(-50%);
-  background: #ff0055;
+  background: #ff9f43;
   border-radius: 16px;
   padding: 10px 22px;
   pointer-events: none;
   z-index: 50;
   white-space: nowrap;
-  box-shadow: 0 0 30px rgba(255, 0, 85, 0.6);
+  box-shadow: 0 0 30px rgba(255, 159, 67, 0.4);
 }
 
 .angry-text {

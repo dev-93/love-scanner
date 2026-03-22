@@ -77,8 +77,8 @@ export const calculateLoveScore = (faceData) => {
   // ── 얼굴 대칭/비율 점수 (40% 비중) ─────────────────────────
   const { harmonyScore } = analyzeFacialHarmony(landmarks);
 
-  // ── 가중 합산 ─────────────────────────────────────────────
-  const combined = expressionScore * 0.6 + harmonyScore * 0.4;
+  // ── 가중 합산 (표정 50% + 생김새 50%) ─────────────────────────
+  const combined = expressionScore * 0.5 + harmonyScore * 0.5;
   const finalScore = Math.max(0.1, Math.min(99.9, Math.round(combined * 10) / 10));
 
   const expressionLabels = {

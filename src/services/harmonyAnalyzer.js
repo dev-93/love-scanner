@@ -147,12 +147,12 @@ export const analyzeFacialHarmony = (landmarks) => {
   const proportion   = calcFaceProportion(pts);  // 얼굴 황금비
   const mouthRatio   = calcMouthRatio(pts);      // 입 너비 비율
 
-  // 가중 평균 (대칭 > 비율 > 눈 > 입)
+  // 가중 평균 (대칭 > 비율 > 눈 > 입) - 생김새 완성도 위주
   const harmonyScore = (
-    symmetry   * 0.45 +
-    proportion * 0.25 +
-    eyeRatio   * 0.20 +
-    mouthRatio * 0.10
+    symmetry   * 0.50 +
+    proportion * 0.30 +
+    eyeRatio   * 0.15 +
+    mouthRatio * 0.05
   );
 
   return {
