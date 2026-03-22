@@ -135,6 +135,7 @@ body {
   background: #111;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -204,11 +205,18 @@ body {
 }
 
 @media (max-width: 768px) {
+  .app-container {
+    align-items: flex-start;
+  }
+
   .mobile-viewport {
     width: 100vw;
+    width: 100dvw;
     height: 100vh;
+    height: 100dvh;
     max-width: none;
     aspect-ratio: auto;
+    box-shadow: none;
   }
 }
 </style>
