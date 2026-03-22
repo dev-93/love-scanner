@@ -63,7 +63,7 @@ const detectFace = async () => {
   return {
     expression: topExpression[0], // 'happy', 'sad', 'angry' 등
     probability: (topExpression[1] * 100).toFixed(1),
-    landmarks: detection.landmarks.positions.length // 특징점 개수
+    landmarks: detection.landmarks.positions, // 68개 좌표 배열 (대칭 분석용)
   };
 };
 

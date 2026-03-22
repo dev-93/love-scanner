@@ -1,7 +1,8 @@
 /**
  * 연애 확률 전문가 스코어링 모듈
- * 표정 데이터를 다차원으로 분석하여 연애 성공 확률을 계산합니다.
+ * 표정 데이터 + 얼굴 대칭/비율 분석을 다차원으로 계산합니다.
  */
+import { analyzeFacialHarmony } from './harmonyAnalyzer.js';
 
 // 표정별 기본 확률 범위 (min, max)
 const EXPRESSION_RANGES = {
@@ -29,11 +30,9 @@ const randomInRange = (min, max) => {
  */
 const applySmileBonus = (wasSmiling, baseScore) => {
   if (wasSmiling) {
-    // 웃었는데 행복 표정이면 보너스, 다른 표정이면 소폭 보정
     const bonus = Math.random() * 8 + 2; // +2 ~ +10
     return Math.min(baseScore + bonus, 97);
   } else {
-    // 끝까지 안 웃었으면 패널티
     const penalty = Math.random() * 10 + 3; // -3 ~ -13
     return Math.max(baseScore - penalty, 1);
   }
@@ -45,15 +44,16 @@ const applySmileBonus = (wasSmiling, baseScore) => {
  */
 const applyConfidenceAdjust = (score, probability) => {
   const confidence = parseFloat(probability) / 100; // 0~1
-  // 신뢰도가 낮으면 50점 방향으로 당김 (애매한 표정)
   const pull = (50 - score) * (1 - confidence) * 0.3;
   return Math.round((score + pull) * 10) / 10;
 };
 
 /**
  * 메인 스코어 계산 함수
+ * 표정 점수(60%) + 얼굴 대칭/비율 점수(40%) 가중 합산
+ *
  * @param {object|null} faceData - { expression, probability, landmarks, wasSmiling }
- * @returns {{ percent: number, expressionLabel: string }}
+ * @returns {{ percent: number, expressionLabel: string, harmonyScore: number|null }}
  */
 export const calculateLoveScore = (faceData) => {
   // 얼굴 데이터 없을 때 - 중하위 랜덤
@@ -61,23 +61,25 @@ export const calculateLoveScore = (faceData) => {
     return {
       percent: randomInRange(10, 45),
       expressionLabel: '감지 불가',
+      harmonyScore: null,
     };
   }
 
-  const { expression, probability, wasSmiling } = faceData;
+  const { expression, probability, landmarks, wasSmiling } = faceData;
   const range = EXPRESSION_RANGES[expression] || EXPRESSION_RANGES.neutral;
 
-  // 1단계: 표정 범위에서 기본 점수 추출
-  let score = randomInRange(range.min, range.max);
+  // ── 표정 기반 점수 (60% 비중) ──────────────────────────────
+  let expressionScore = randomInRange(range.min, range.max);
+  expressionScore = applySmileBonus(wasSmiling, expressionScore);
+  expressionScore = applyConfidenceAdjust(expressionScore, probability);
+  expressionScore = Math.max(0.1, Math.min(99.9, expressionScore));
 
-  // 2단계: 미소 지속 보너스/패널티 적용
-  score = applySmileBonus(wasSmiling, score);
+  // ── 얼굴 대칭/비율 점수 (40% 비중) ─────────────────────────
+  const { harmonyScore } = analyzeFacialHarmony(landmarks);
 
-  // 3단계: 신뢰도에 따른 미세 보정
-  score = applyConfidenceAdjust(score, probability);
-
-  // 소수점 1자리로 최종 클리핑
-  score = Math.max(0.1, Math.min(99.9, Math.round(score * 10) / 10));
+  // ── 가중 합산 ─────────────────────────────────────────────
+  const combined = expressionScore * 0.6 + harmonyScore * 0.4;
+  const finalScore = Math.max(0.1, Math.min(99.9, Math.round(combined * 10) / 10));
 
   const expressionLabels = {
     happy:     '행복',
@@ -90,7 +92,8 @@ export const calculateLoveScore = (faceData) => {
   };
 
   return {
-    percent: score,
+    percent: finalScore,
     expressionLabel: expressionLabels[expression] || '알 수 없음',
+    harmonyScore,
   };
 };

@@ -78,10 +78,10 @@ const completeScan = async () => {
   // 최종 결과 전송 시 '실시간 미소 여부'를 포함해서 전달
   const finalFaceData = faceData ? { ...faceData, wasSmiling: isSmiling.value } : null;
 
-  // 🎯 전문가 스코어 계산 (표정 기반 정밀 점수)
+  // 🎯 전문가 스코어 계산 (표정 + 얼굴 대칭/비율 정밀 점수)
   const expertScore = calculateLoveScore(finalFaceData);
 
-  const rawResult = await generateLoveResult(expertScore.percent, finalFaceData);
+  const rawResult = await generateLoveResult(expertScore.percent, finalFaceData, expertScore.harmonyScore);
   
   // AI가 점수를 반환하면 AI 점수 사용, 실패하면 전문가 점수 사용
   let finalPercent = expertScore.percent;

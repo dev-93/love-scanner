@@ -37,7 +37,7 @@ const FALLBACK_MENOTS = {
  * @param {number} probability - 초기 랜덤 확률
  * @param {object} faceData - { expression, probability, landmarks, wasSmiling }
  */
-export const generateLoveResult = async (probability, faceData = null) => {
+export const generateLoveResult = async (probability, faceData = null, harmonyScore = null) => {
   const ai = initAI();
   if (!ai) return "API 키 설정 필요";
 
@@ -48,19 +48,26 @@ export const generateLoveResult = async (probability, faceData = null) => {
     smileState = faceData.wasSmiling ? "가식적으로 웃으려 노력함" : "끝까지 무뚝뚝함 (웃음 거부)";
   }
 
+  const harmonyLine = harmonyScore !== null
+    ? `- 얼굴 대칭/황금비 점수: ${harmonyScore.toFixed(1)}점 (100점 만점)`
+    : '';
+
   const prompt = `
     [페르소나]
     너는 방패와 검을 든 '세비지(Savage) 시바견 기사'다. 
-    너는 사용자의 외모는 보지 않지만, 그 '관상(표정/바이브)'에서 나오는 처절한 솔로의 향기를 기가 막히게 캐치한다.
+    너는 사용자의 관상(표정/바이브/이목구비 조화)에서 나오는 처절한 솔로의 향기를 기가 막히게 캐치한다.
     
     [사용자 데이터]
+    - 전문가 산출 연애 확률: ${probability}%
     - 스캔 중 태도: ${smileState}
     - 실시간 표정: ${faceData?.expression || "알 수 없음"}
+    ${harmonyLine}
     
     [특수 미션: 찌르는 포인트]
     1. 사용자가 끝까지 안 웃었으면 '사회성 결여된 철벽남/녀' 컨셉으로 아프게 찌를 것.
     2. 억지로 웃었으면 '처량한 자본주의 미소'의 가식됨을 가차 없이 비꼴 것.
-    3. 구체적인 확률(예: 3.14%, 0.5% 등 아주 낮거나 오묘하게)을 소수점까지 생성할 것.
+    3. 대칭 점수가 낮으면(60 이하) 이목구비 관련 멘트를 슬쩍 추가해도 됨.
+    4. 확률은 전문가 산출값(${probability}%)을 기반으로 ±5% 범위 내에서 소수점까지 표현.
     
     [가이드라인]
     - 반드시 '[확률]% | [멘트]' 형식만 써.
