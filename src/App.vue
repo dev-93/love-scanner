@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import CameraView from './components/CameraView.vue';
 import ScannerOverlay from './components/ScannerOverlay.vue';
 import { generateLoveResult } from './services/gemini.js';
+import { calculateLoveScore } from './services/scoreExpert.js';
 
 const cameraRef = ref(null);
 const status = ref('ready'); // 'ready', 'scanning', 'result'
@@ -21,15 +22,22 @@ const analyzingMessages = [
   "거의 다 왔습니다..."
 ];
 
-// 실시간 미소 감지 루프
+// 실시간 미소 감지 루프 (2초 간격으로 쓰로틀링 - 눈 피로 방지)
+const EXPRESSION_UPDATE_INTERVAL = 2000; // ms
+let lastExpressionUpdate = 0;
+
 const startExpressionLoop = () => {
-  const check = async () => {
+  const check = async (timestamp) => {
     if (status.value !== 'scanning') return;
-    
-    const faceData = await cameraRef.value?.detectFace();
-    if (faceData) {
-      // 미소 감지 (happy 확률이 높을 때만 true)
-      isSmiling.value = faceData.expression === 'happy' && parseFloat(faceData.probability) > 50;
+
+    // 2초마다 한 번만 표정 업데이트
+    if (timestamp - lastExpressionUpdate >= EXPRESSION_UPDATE_INTERVAL) {
+      lastExpressionUpdate = timestamp;
+      const faceData = await cameraRef.value?.detectFace();
+      if (faceData) {
+        // 미소 감지 (happy 확률이 높을 때만 true)
+        isSmiling.value = faceData.expression === 'happy' && parseFloat(faceData.probability) > 50;
+      }
     }
     expressionLoop = requestAnimationFrame(check);
   };
@@ -46,10 +54,9 @@ const startScan = async () => {
   progress.value = 0;
   analyzingMessage.value = analyzingMessages[0];
   isSmiling.value = true;
+  lastExpressionUpdate = 0; // 루프 시작 시 타임스탬프 초기화
   
   startExpressionLoop();
-  
-  const fallbackPercent = Math.floor(Math.random() * 100) + 1;
   
   const interval = setInterval(() => {
     progress.value += Math.random() * 5 + 2;
@@ -61,24 +68,29 @@ const startScan = async () => {
       progress.value = 100;
       clearInterval(interval);
       cancelAnimationFrame(expressionLoop);
-      completeScan(fallbackPercent);
+      completeScan();
     }
   }, 100);
 };
 
-const completeScan = async (fallbackPercent) => {
+const completeScan = async () => {
   const faceData = await cameraRef.value?.detectFace();
   // 최종 결과 전송 시 '실시간 미소 여부'를 포함해서 전달
   const finalFaceData = faceData ? { ...faceData, wasSmiling: isSmiling.value } : null;
-  const rawResult = await generateLoveResult(fallbackPercent, finalFaceData);
+
+  // 🎯 전문가 스코어 계산 (표정 기반 정밀 점수)
+  const expertScore = calculateLoveScore(finalFaceData);
+
+  const rawResult = await generateLoveResult(expertScore.percent, finalFaceData);
   
-  let finalPercent = fallbackPercent;
+  // AI가 점수를 반환하면 AI 점수 사용, 실패하면 전문가 점수 사용
+  let finalPercent = expertScore.percent;
   let finalComment = rawResult;
 
   if (rawResult.includes('|')) {
     const parts = rawResult.split('|');
-    const pctMatch = parts[0].match(/\d+/);
-    if (pctMatch) finalPercent = parseInt(pctMatch[0]);
+    const pctMatch = parts[0].match(/[\d.]+/);
+    if (pctMatch) finalPercent = parseFloat(pctMatch[0]);
     finalComment = parts[1].trim();
   }
   
