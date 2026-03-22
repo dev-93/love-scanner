@@ -29,8 +29,7 @@ const startCamera = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { 
         facingMode: 'user',
-        width: { ideal: 720 },
-        height: { ideal: 1280 }
+        aspectRatio: { ideal: 9/16 } // 모바일 세로 비율 최적화
       },
       audio: false
     });
@@ -136,8 +135,9 @@ defineExpose({ startCamera, detectFace, takePhoto, isModelLoaded });
 .video-preview {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain; /* 줌 현상 해결을 위해 contain으로 변경 */
   transform: scaleX(-1); /* 셀카 모드 좌우 반전 */
+  background: #000;
 }
 
 .permission-error {
