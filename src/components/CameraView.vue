@@ -95,7 +95,7 @@ onUnmounted(() => {
   stopCamera();
 });
 
-defineExpose({ startCamera, detectFace, takePhoto, isModelLoaded });
+defineExpose({ startCamera, detectFace, takePhoto, isModelLoaded, permissionDenied });
 </script>
 
 

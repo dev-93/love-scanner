@@ -45,6 +45,11 @@ const startExpressionLoop = () => {
 };
 
 const startScan = async () => {
+  if (cameraRef.value?.permissionDenied) {
+    alert("카메라 권한이 거부되었습니다. 설정에서 권한을 허용하신 후 다시 시도해 주세요.");
+    return;
+  }
+
   if (!cameraRef.value?.isModelLoaded) {
     alert("AI 분석 모델을 불러오는 중입니다. 잠시만 기다려 주세요!");
     return;
@@ -132,7 +137,7 @@ const resetScan = () => {
       </div>
 
       <!-- 모델 로딩 오버레이 -->
-      <div v-if="cameraRef && !cameraRef.isModelLoaded" class="loading-overlay">
+      <div v-if="cameraRef && !cameraRef.isModelLoaded && !cameraRef.permissionDenied" class="loading-overlay">
         <div class="loader"></div>
         <p>AI 모델 로딩 중...</p>
       </div>
