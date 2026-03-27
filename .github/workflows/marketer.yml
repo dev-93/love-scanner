@@ -2,9 +2,9 @@ name: Daily Marketing Briefing
 
 on:
   schedule:
-    # 10:30 AM KST ~ 09:30 PM KST (매시간 30분)
-    # UTC 01:30 ~ 12:30
-    - cron: '30 1-12 * * *'
+    # 오전 10:30 (KST) / 오후 04:30 (KST)
+    # UTC 01:30 / 07:30
+    - cron: '30 1,7 * * *'
   workflow_dispatch: # 수동 실행 가능
 
 jobs:
