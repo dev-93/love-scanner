@@ -1,20 +1,20 @@
 {
-  "name": "love-scanner",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite --open",
-    "build": "vite build",
-    "preview": "vite preview"
+  "name" : "love-scanner",
+  "private" : true,
+  "version" : "0.0.0",
+  "type" : "module",
+  "scripts" : {
+    "dev" : "vite --open",
+    "build" : "vite build",
+    "preview" : "vite preview"
   },
-  "dependencies": {
-    "@google/generative-ai": "^0.30.0",
-    "@vladmandic/face-api": "^1.7.15",
-    "vue": "^3.5.30"
+  "dependencies" : {
+    "@google/genai" : "^1.46.0",
+    "@vladmandic/face-api" : "^1.7.15",
+    "vue" : "^3.5.30"
   },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.5",
-    "vite": "^8.0.1"
+  "devDependencies" : {
+    "@vitejs/plugin-vue" : "^6.0.5",
+    "vite" : "^8.0.1"
   }
 }
