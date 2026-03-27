@@ -10,8 +10,16 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "마케팅 봇 구동을 위한 환경변수가 설정되지 않았습니다." });
     }
 
+    // 보안 토큰 확인 (GitHub Action과 Vercel 간의 암호)
+    const marketerToken = process.env.MARKETER_API_TOKEN;
+    const requestToken = req.headers['x-marketer-token'];
+    
+    if (marketerToken && requestToken !== marketerToken) {
+      return res.status(401).json({ error: "권한이 없습니다." });
+    }
+
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // GitHub Actions 등을 통해 전달받은 최근 변경사항
     const { recentChanges } = req.body || {};
