@@ -1,15 +1,4 @@
-import { createClient } from "@google/genai";
-
-let client = null;
-
-const initClient = () => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) return null;
-  if (!client) {
-    client = createClient({ apiKey });
-  }
-  return client;
-};
+// src/services/gemini.js
 
 // 로컬 폴백 멘트 리스트
 const FALLBACK_MENOTS = {
@@ -33,9 +22,13 @@ const FALLBACK_MENOTS = {
   ]
 };
 
+/**
+ * @param {number} probability - 초기 랜덤 확률
+ * @param {object} faceData - { expression, probability, landmarks, wasSmiling }
+ */
 export const generateLoveResult = async (probability, faceData = null, harmonyScore = null) => {
-  const aiClient = initClient();
-  if (!aiClient) return "API 키 설정 필요";
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) return "API 키 설정 필요";
 
   const smileState = faceData?.wasSmiling ? "가식적으로 웃으려 노력함" : "끝까지 무뚝뚝함 (웃음 거부)";
   const harmonyLine = harmonyScore !== null
@@ -54,22 +47,33 @@ export const generateLoveResult = async (probability, faceData = null, harmonySc
     - 반드시 '[확률]% | [멘트]' 형식으로만 출력.
     - 확률은 ${probability}% 기준 ±5% 범위 내 소수점 한 자리로 표현.
     - 멘트는 딱 1문장, 20자 이내로 정중하게.
-    - 모델: gemini-2.5-flash 전용
+    - 모델: gemini-2.5-flash
   `;
 
   try {
-    // 팀장님 지시에 따라 오직 gemini-2.5-flash만 사용
-    const result = await aiClient.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }] }]
+    // 💡 Vite 빌드 에러 해결을 위해 SDK를 쓰지 않고 표준 fetch로 직접 호출 (gemini-2.5-flash 전용)
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }]
+      })
     });
 
-    const responseText = result.response.text();
-    return responseText.trim();
-  } catch (error) {
-    console.warn("Gemini 2.5 Flash 호출 실패:", error.message);
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     
-    // 로컬 폴백으로 선회
+    return responseText.trim() || `${probability}% | 매력적인 분석 결과입니다.`;
+  } catch (error) {
+    console.warn("Gemini 2.5 Flash 호출 실패 (폴백 가동):", error.message);
+    
+    // 로컬 폴백 (최종 방어선)
     const category = faceData ? (faceData.wasSmiling ? 'forcedSmile' : 'unsmiling') : 'default';
     const pool = FALLBACK_MENOTS[category] || FALLBACK_MENOTS.default;
     const randomMent = pool[Math.floor(Math.random() * pool.length)];
