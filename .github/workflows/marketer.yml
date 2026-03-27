@@ -2,7 +2,7 @@ name: Daily Marketing Briefing
 
 on:
   schedule:
-    # 10:30 AM KST ~ 09:30 PM KST (Every hour at :30)
+    # 10:30 AM KST ~ 09:30 PM KST (매시간 30분)
     # UTC 01:30 ~ 12:30
     - cron: '30 1-12 * * *'
   workflow_dispatch: # 수동 실행 가능
@@ -17,32 +17,70 @@ jobs:
         with:
           fetch-depth: 5
 
-      - name: Install jq
-        run: sudo apt-get install -y jq
+      - name: Install Dependencies
+        run: pip3 install google-generativeai requests
 
-      - name: Send Marketer Report
+      - name: Generate & Send Marketing Briefing
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          # 최근 커밋 로그 추출 (줄바꿈을 \n 으로 변환)
-          COMMITS=$(git log -n 5 --pretty=format:"- %s (%ad)" --date=short | tr '\n' ' ')
-          
-          # jq로 안전하게 JSON 생성 (특수문자/따옴표 자동 이스케이프)
-          JSON_BODY=$(jq -n --arg changes "$COMMITS" '{"recentChanges": $changes}')
+          # 최근 커밋 로그 추출
+          COMMITS=$(git log -n 5 --pretty=format:"- %s (%ad)" --date=short)
 
-          # API 호출
-          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
-            -X POST "${{ secrets.VERCEL_MARKETER_URL }}/api/marketer" \
-            -H "Content-Type: application/json" \
-            -H "x-marketer-token: ${{ secrets.MARKETER_API_TOKEN }}" \
-            -d "$JSON_BODY")
+          # Python으로 Gemini 호출 + Telegram 전송 (한 번에!)
+          python3 << 'PYTHON_EOF'
+          import os
+          import requests
+          import google.generativeai as genai
+          import subprocess
 
-          # 결과 출력 (디버깅용)
-          echo "Response: $RESPONSE"
-          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d: -f2)
-          echo "HTTP Status: $HTTP_STATUS"
-          
-          if [ "$HTTP_STATUS" != "200" ]; then
-            echo "❌ API 호출 실패 (Status: $HTTP_STATUS)"
-            exit 1
-          fi
-          
-          echo "✅ 마케터 보고 성공!"
+          # 최근 커밋 가져오기
+          result = subprocess.run(
+              ['git', 'log', '-n', '5', '--pretty=format:- %s (%ad)', '--date=short'],
+              capture_output=True, text=True
+          )
+          recent_changes = result.stdout or "특별한 변경 사항 없음"
+
+          # Gemini 설정
+          genai.configure(api_key=os.environ['GEMINI_API_KEY'])
+          model = genai.GenerativeModel('gemini-2.0-flash')
+
+          prompt = f"""
+          [역할]
+          너는 'Love Scanner(얼굴 인식 연애운 테스트 앱)'의 전담 AI 그로스 마케터 '제시(Jessi)'다.
+          목표: 이 앱을 바이럴시키고, 수익화 기회를 찾는 것.
+          앱 현황: 이제 막 완성. 아직 홍보 0회. 마케팅 예산 0원. 무료 Gemini API 사용 중.
+
+          [최근 프로젝트 변경 사항]
+          {recent_changes}
+
+          [작업 지시]
+          위 변경 사항을 참고하여 오늘 즉시 실행 가능한 구체적인 마케팅/수익화 아이디어 1개를 보고해라.
+          뜬구름 잡는 소리 말고, 진짜 해볼 만한 아이디어를 줘.
+          텔레그램 포맷으로 활기차게, 이모지를 섞어서 2-3문단으로 간결하게 써줘.
+          """
+
+          response = model.generate_content(prompt)
+          message = response.text
+
+          # 텔레그램 전송
+          bot_token = os.environ['TELEGRAM_BOT_TOKEN']
+          chat_id = os.environ['TELEGRAM_CHAT_ID']
+          url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+
+          resp = requests.post(url, json={
+              'chat_id': int(chat_id),
+              'text': message,
+              'parse_mode': 'Markdown'
+          })
+
+          print(f"Telegram Status: {resp.status_code}")
+          print(f"Response: {resp.text}")
+
+          if not resp.ok:
+              raise Exception(f"Telegram 전송 실패: {resp.text}")
+
+          print("✅ 마케터 보고 완료!")
+          PYTHON_EOF
