@@ -22,52 +22,67 @@ jobs:
 
       - name: Generate & Send Marketing Briefing
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || secrets.VITE_GEMINI_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          # 최근 커밋 로그 추출
-          COMMITS=$(git log -n 5 --pretty=format:"- %s (%ad)" --date=short)
-
-          # Python으로 Gemini 호출 + Telegram 전송 (한 번에!)
           python3 << 'PYTHON_EOF'
           import os
+          import sys
           import requests
           import google.generativeai as genai
           import subprocess
 
-          # 최근 커밋 가져오기
+          # 1. API 키 확인
+          api_key = os.environ.get('GEMINI_API_KEY')
+          if not api_key:
+              print("❌ 에러: GEMINI_API_KEY 또는 VITE_GEMINI_API_KEY 시크릿을 찾을 수 없습니다.")
+              print("GitHub Settings > Environments > Production > Secrets에 등록해 주세요!")
+              sys.exit(1)
+
+          # 2. 최근 커밋 가져오기
           result = subprocess.run(
               ['git', 'log', '-n', '5', '--pretty=format:- %s (%ad)', '--date=short'],
               capture_output=True, text=True
           )
           recent_changes = result.stdout or "특별한 변경 사항 없음"
 
-          # Gemini 설정
-          genai.configure(api_key=os.environ['GEMINI_API_KEY'])
+          # 3. Gemini 설정
+          # 라이브러리가 선호하는 환경변수 이름으로도 세팅
+          os.environ['GOOGLE_API_KEY'] = api_key
+          genai.configure(api_key=api_key)
+          
           model = genai.GenerativeModel('gemini-2.0-flash')
 
           prompt = f"""
           [역할]
           너는 'Love Scanner(얼굴 인식 연애운 테스트 앱)'의 전담 AI 그로스 마케터 '제시(Jessi)'다.
           목표: 이 앱을 바이럴시키고, 수익화 기회를 찾는 것.
-          앱 현황: 이제 막 완성. 아직 홍보 0회. 마케팅 예산 0원. 무료 Gemini API 사용 중.
 
           [최근 프로젝트 변경 사항]
           {recent_changes}
 
           [작업 지시]
           위 변경 사항을 참고하여 오늘 즉시 실행 가능한 구체적인 마케팅/수익화 아이디어 1개를 보고해라.
-          뜬구름 잡는 소리 말고, 진짜 해볼 만한 아이디어를 줘.
-          텔레그램 포맷으로 활기차게, 이모지를 섞어서 2-3문단으로 간결하게 써줘.
+          뜬구름 잡는 소리 말고, 진짜 해볼 만한 아이디어를 실천 가이드와 함께 줘.
+          텔레그램 포맷으로 활기차게 이모지를 섞어서 2-3문단으로 간결하게 써줘.
           """
 
-          response = model.generate_content(prompt)
-          message = response.text
+          try:
+              response = model.generate_content(prompt)
+              message = response.text
+          except Exception as e:
+              print(f"❌ Gemini 호출 실패: {str(e)}")
+              sys.exit(1)
 
-          # 텔레그램 전송
-          bot_token = os.environ['TELEGRAM_BOT_TOKEN']
-          chat_id = os.environ['TELEGRAM_CHAT_ID']
+          # 4. 텔레그램 전송
+          bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
+          chat_id = os.environ.get('TELEGRAM_CHAT_ID')
+          
+          if not bot_token or not chat_id:
+              print("❌ 에러: TELEGRAM 토큰 또는 챗 ID가 설정되지 않았습니다.")
+              sys.exit(1)
+
           url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
 
           resp = requests.post(url, json={
@@ -76,11 +91,9 @@ jobs:
               'parse_mode': 'Markdown'
           })
 
-          print(f"Telegram Status: {resp.status_code}")
-          print(f"Response: {resp.text}")
-
           if not resp.ok:
-              raise Exception(f"Telegram 전송 실패: {resp.text}")
+              print(f"❌ 텔레그램 전송 실패: {resp.text}")
+              sys.exit(1)
 
-          print("✅ 마케터 보고 완료!")
+          print("✅ 마케터 제시의 보고가 성공적으로 전송되었습니다!")
           PYTHON_EOF
