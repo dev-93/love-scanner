@@ -10,25 +10,39 @@ on:
 jobs:
   marketing-report:
     runs-on: ubuntu-latest
-    environment: Production # GitHub Environments의 Secret에 접근하기 위해 설정
+    environment: Production
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 5
 
-      - name: Get Recent Commits
-        id: get_commits
-        run: |
-          # 커밋 로그를 한 줄로 합쳐서 환경 변수에 저장
-          echo "COMMITS<<EOF" >> $GITHUB_ENV
-          git log -n 5 --pretty=format:"- %s (%ad)" --date=short >> $GITHUB_ENV
-          echo "" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+      - name: Install jq
+        run: sudo apt-get install -y jq
 
-      - name: Call Marketer API
+      - name: Send Marketer Report
         run: |
-          curl -X POST "https://love-scanner.vercel.app/api/marketer" \
+          # 최근 커밋 로그 추출 (줄바꿈을 \n 으로 변환)
+          COMMITS=$(git log -n 5 --pretty=format:"- %s (%ad)" --date=short | tr '\n' ' ')
+          
+          # jq로 안전하게 JSON 생성 (특수문자/따옴표 자동 이스케이프)
+          JSON_BODY=$(jq -n --arg changes "$COMMITS" '{"recentChanges": $changes}')
+
+          # API 호출
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+            -X POST "${{ secrets.VERCEL_MARKETER_URL }}/api/marketer" \
             -H "Content-Type: application/json" \
             -H "x-marketer-token: ${{ secrets.MARKETER_API_TOKEN }}" \
-            -d "{ \"recentChanges\": \"${{ env.COMMITS }}\" }"
+            -d "$JSON_BODY")
+
+          # 결과 출력 (디버깅용)
+          echo "Response: $RESPONSE"
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d: -f2)
+          echo "HTTP Status: $HTTP_STATUS"
+          
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ API 호출 실패 (Status: $HTTP_STATUS)"
+            exit 1
+          fi
+          
+          echo "✅ 마케터 보고 성공!"
