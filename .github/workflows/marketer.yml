@@ -1,0 +1,32 @@
+name: Daily Marketing Briefing
+
+on:
+  schedule:
+    # 10:00 AM KST (01:00 UTC)
+    - cron: '0 1 * * *'
+    # 06:00 PM KST (09:00 UTC)
+    - cron: '0 9 * * *'
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  marketing-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 5 # 최근 변경사항 분석을 위해 5개 커밋 가져오기
+
+      - name: Get Recent Commits
+        id: get_commits
+        run: |
+          COMMITS=$(git log -n 5 --pretty=format:"- %s (%ad)" --date=short)
+          echo "COMMITS<<EOF" >> $GITHUB_ENV
+          echo "$COMMITS" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Call Marketer API
+        run: |
+          curl -X POST "https://love-scanner.vercel.app/api/marketer" \
+            -H "Content-Type: application/json" \
+            -d "{ \"recentChanges\": \"${{ env.COMMITS }}\" }"

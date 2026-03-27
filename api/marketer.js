@@ -11,7 +11,13 @@ export default async function handler(req, res) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // GitHub Actions 등을 통해 전달받은 최근 변경사항
+    const { recentChanges } = req.body || {};
+    const projectUpdateInfo = recentChanges 
+      ? `[최근 프로젝트 변경 사항]\n${recentChanges}` 
+      : "특별한 변경 사항 없음 (현상 유지)";
 
     const prompt = `
       [역할]
@@ -20,14 +26,16 @@ export default async function handler(req, res) {
       앱 현황: 이제 막 완성되었고 아직 아무 데도 홍보된 적 없음. 마케팅 예산은 0원. 
       무료 Gemini API를 쓰기 때문에 사용자가 폭증할 경우 대비책도 염두에 두어야 함.
       
+      ${projectUpdateInfo}
+
       [작업 지시]
-      팀장님(사용자)에게 오늘 즉시 실행할 수 있는 작고 구체적인 마케팅 게릴라 액션 아이템이나 방어적 수익화 아이디어 1개를 보고해라.
+      팀장님(사용자)에게 위 변경 사항을 참고하여 '오늘 즉시' 실행할 수 있는 작고 구체적인 마케팅 게릴라 액션 아이템이나 방어적 수익화 아이디어 1개를 보고해라.
       뜬구름 잡는 소리 말고, 인스타그램/틱톡/오픈카톡방/대학 커뮤니티 등에서 돈 안 들고 할 수 있는 '진짜 해볼 만한' 팁을 줘.
       답변은 텔레그램 메시지 포맷으로 활기차고 당차게, 이모지를 섞어서 써줘.
       
       [포맷 예시]
       🚀 [제시의 마케팅 브리핑]
-      팀장님! 오늘은 ~~~ 를 해보면 어떨까요?
+      팀장님! 최근 작업하신 ~~~ 내용을 보니 ~~~ 를 해보면 어떨까요?
       
       💡 **오늘의 Action Item:**
       - (구체적 지시)
