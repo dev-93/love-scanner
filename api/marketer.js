@@ -2,14 +2,14 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req, res) {
   try {
-    // 1. 환경변수 확인 (VITE_ 접두사가 있든 없든 둘 다 체크)
+    // 1. 환경변수 확인
     const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
 
     if (!apiKey || !botToken || !chatId) {
       console.error("❌ 환경변수 누락");
-      return res.status(500).json({ error: "환경변수 설정(GEMINI_API_KEY, TELEGRAM_...)이 필요합니다." });
+      return res.status(500).json({ error: "환경변수 설정이 필요합니다." });
     }
 
     // 2. 보안 토큰 확인
@@ -19,47 +19,43 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    // 3. 모델 큐 설정 (프론트와 동일하게 구성하여 생존율 극대화)
-    const modelQueue = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
-    const genAI = new GoogleGenerativeAI(apiKey);
-
     const { recentChanges } = req.body || {};
+    const projectUpdateInfo = recentChanges 
+      ? `[최근 프로젝트 변경 사항]\n${recentChanges}` 
+      : "특별한 변경 사항 없음 (현상 유지)";
+
     const prompt = `
-      [역할] 너는 'Love Scanner'의 AI 마케터 '제시'다.
-      [상황] ${recentChanges || "기능 최적화 및 안정성 작업 완료"}
-      [작업] 위 내용을 바탕으로 팀장님께 활기차게 이모지를 섞어 텔레그램 마케팅 보고를 해줘. 
-      딱 1줄의 핵심 Action Item을 포함할 것.
+      [역할]
+      너는 'Love Scanner(얼굴 인식 연애운 테스트 앱)'의 전담 AI 그로스 마케터 '제시(Jessi)'다.
+      너의 목표는 팀장과 함께 이 앱을 바이럴시키고 트래픽을 모아 수익화하는 것이다.
+      
+      ${projectUpdateInfo}
+
+      [작업 지시]
+      오늘 즉시 실행할 수 있는 작고 구체적인 마케팅 액션 아이템 1개를 보고해라.
+      활기차고 당차게, 이모지를 섞어서 텔레그램 메시지 포맷으로 써줘.
     `;
 
-    let aiMessage = "";
-    let successModel = "";
-
-    // 모델 큐 순회
-    for (const modelName of modelQueue) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent(prompt);
-        aiMessage = await result.response.text();
-        successModel = modelName;
-        if (aiMessage) break;
-      } catch (err) {
-        console.warn(`${modelName} 시도 실패:`, err.message);
-        continue;
-      }
-    }
+    // 3. 팀장님 지시에 따라 오직 gemini-2.5-flash만 사용
+    const modelName = "gemini-2.5-flash";
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: modelName });
+    
+    const result = await model.generateContent(prompt);
+    const aiMessage = await result.response.text();
 
     if (!aiMessage) {
-      throw new Error("모든 Gemini 모델 호출에 실패했습니다.");
+      throw new Error("AI 메시지 생성에 실패했습니다.");
     }
 
-    // 4. 텔레그램 전송 (최신 Node의 fetch 사용)
+    // 4. 텔레그램 전송
     const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
     const telResp = await fetch(telegramUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `🤖 (Model: ${successModel})\n\n${aiMessage}`,
+        text: `🤖 (Model: ${modelName})\n\n${aiMessage}`,
         parse_mode: "Markdown"
       })
     });
@@ -69,7 +65,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Telegram 전송 실패", details: errDetail });
     }
 
-    res.status(200).json({ status: "Success", model: successModel });
+    res.status(200).json({ status: "Success", model: modelName });
   } catch (error) {
     console.error("🔥 서버 에러 발생:", error);
     res.status(500).json({ error: error.message });

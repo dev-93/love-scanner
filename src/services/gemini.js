@@ -41,7 +41,7 @@ export const generateLoveResult = async (probability, faceData = null, harmonySc
   const ai = initAI();
   if (!ai) return "API 키 설정 필요";
 
-  const modelQueue = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"];
+  const modelQueue = ["gemini-2.5-flash"];
 
   let smileState = "관측 불가";
   if (faceData) {
