@@ -84,10 +84,21 @@ const getAngryMessage = () => {
     <!-- Bottom UI -->
     <div :class="['hud-bottom', (props.status === 'result' && props.result.percent <= 30) ? 'screen-shake' : '']">
       <div v-if="props.status === 'result'" class="result-box judgment-box">
-        <div class="result-tag">💘 오늘의 연애 확률 분석 완료</div>
+        <div class="result-tag">💘 오늘의 연애 확률 및 관상 분석 완료</div>
+        
+        <div class="result-style-badge" v-if="props.result.style">
+          {{ props.result.style }}
+        </div>
+
         <p class="result-label">연애 성공 확률</p>
         <h1 class="result-percent">{{ Math.round(props.result.percent) }}%</h1>
-        <p class="result-comment">"{{ props.result.comment }}"</p>
+        
+        <div class="result-divider"></div>
+        
+        <div class="physiognomy-box">
+          <p class="physiognomy-title">🖋️ 연애 관상 분석/팁</p>
+          <p class="result-comment">{{ props.result.comment }}</p>
+        </div>
       </div>
 
       <div v-if="props.status === 'scanning'" class="analyzing-info">
@@ -224,9 +235,46 @@ const getAngryMessage = () => {
   margin-bottom: 14px;
 }
 
+.result-style-badge {
+  background: linear-gradient(90deg, #ff4757, #ff6b81);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 800;
+  display: inline-block;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+}
+
 .result-label { color: rgba(255,255,255,0.6); font-size: 11px; letter-spacing: 1px; margin-bottom: 4px; }
-.result-percent { color: #ff4757; font-size: 72px; font-weight: 900; margin-bottom: 15px; }
-.result-comment { color: #fff; font-size: 17px; line-height: 1.5; font-weight: 600; }
+.result-percent { color: #ff4757; font-size: 64px; font-weight: 900; margin-bottom: 10px; }
+
+.result-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 15px 0;
+}
+
+.physiognomy-box {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  border-left: 3px solid #00ffcc;
+  text-align: left;
+}
+
+.physiognomy-title {
+  color: #00ffcc;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.result-comment { color: #eee; font-size: 14px; line-height: 1.6; font-weight: 500; }
 
 /* HUD Bottom */
 .hud-bottom { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; margin-bottom: 20px; }

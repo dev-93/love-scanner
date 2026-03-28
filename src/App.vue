@@ -9,7 +9,7 @@ const cameraRef = ref(null);
 const status = ref('ready'); // 'ready', 'scanning', 'result'
 const progress = ref(0);
 const analyzingMessage = ref('연애세포 스캔 중...');
-const resultData = ref({ percent: 0, comment: '' });
+const resultData = ref({ percent: 0, style: '', comment: '' });
 const isSmiling = ref(true); // 실시간 미소 상태
 let expressionLoop = null;
 
@@ -90,17 +90,29 @@ const completeScan = async () => {
   
   // AI가 점수를 반환하면 AI 점수 사용, 실패하면 전문가 점수 사용
   let finalPercent = expertScore.percent;
+  let finalStyle = '분석 중...';
   let finalComment = rawResult;
 
   if (rawResult.includes('|')) {
     const parts = rawResult.split('|');
+    // 1. 확률 추출
     const pctMatch = parts[0].match(/[\d.]+/);
     if (pctMatch) finalPercent = parseFloat(pctMatch[0]);
-    finalComment = parts[1].trim();
+    
+    // 2. 스타일 추출 (2번째 파트)
+    if (parts.length >= 2) finalStyle = parts[1].trim();
+    
+    // 3. 코멘트/팁 추출 (3번째 파트가 있으면 그것을, 없으면 2번째 파트를 사용)
+    if (parts.length >= 3) {
+      finalComment = parts[2].trim();
+    } else if (parts.length === 2) {
+      finalComment = parts[1].trim();
+    }
   }
   
   resultData.value = {
     percent: finalPercent,
+    style: finalStyle,
     comment: finalComment
   };
   
@@ -113,7 +125,7 @@ const completeScan = async () => {
 const resetScan = () => {
   status.value = 'ready';
   progress.value = 0;
-  resultData.value = { percent: 0, comment: '' };
+  resultData.value = { percent: 0, style: '', comment: '' };
 };
 </script>
 
