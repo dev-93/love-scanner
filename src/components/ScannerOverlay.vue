@@ -86,8 +86,15 @@ const getAngryMessage = () => {
       <div v-if="props.status === 'result'" class="result-box judgment-box">
         <div class="result-tag">💘 오늘의 연애 확률 및 관상 분석 완료</div>
         
-        <div class="result-style-badge" v-if="props.result.style">
-          {{ props.result.style }}
+        <div class="style-container">
+          <div class="style-item">
+            <p class="style-label">나의 연애 스타일</p>
+            <div class="result-style-badge mine">{{ props.result.style }}</div>
+          </div>
+          <div class="style-item">
+            <p class="style-label">잘 어울리는 상대</p>
+            <div class="result-style-badge match">{{ props.result.matchStyle }}</div>
+          </div>
         </div>
 
         <p class="result-label">연애 성공 확률</p>
@@ -96,7 +103,7 @@ const getAngryMessage = () => {
         <div class="result-divider"></div>
         
         <div class="physiognomy-box">
-          <p class="physiognomy-title">🖋️ 연애 관상 분석/팁</p>
+          <p class="physiognomy-title">🖋️ 관상학적 연애 성향 분석</p>
           <p class="result-comment">{{ props.result.comment }}</p>
         </div>
       </div>
@@ -235,16 +242,40 @@ const getAngryMessage = () => {
   margin-bottom: 14px;
 }
 
+.style-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.style-label {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .result-style-badge {
-  background: linear-gradient(90deg, #ff4757, #ff6b81);
   color: #fff;
-  padding: 6px 16px;
-  border-radius: 8px;
-  font-size: 16px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 800;
-  display: inline-block;
-  margin-bottom: 12px;
+  display: block;
+  text-align: center;
+}
+
+.result-style-badge.mine {
+  background: linear-gradient(135deg, #ff4757, #ff6b81);
   box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+}
+
+.result-style-badge.match {
+  background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+  box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
 }
 
 .result-label { color: rgba(255,255,255,0.6); font-size: 11px; letter-spacing: 1px; margin-bottom: 4px; }
@@ -257,24 +288,22 @@ const getAngryMessage = () => {
 }
 
 .physiognomy-box {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 16px;
-  border-left: 3px solid #00ffcc;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  padding: 18px;
+  border-left: 4px solid #00ffcc;
   text-align: left;
 }
 
 .physiognomy-title {
   color: #00ffcc;
   font-size: 12px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  letter-spacing: -0.2px;
 }
 
-.result-comment { color: #eee; font-size: 14px; line-height: 1.6; font-weight: 500; }
+.result-comment { color: #fff; font-size: 14px; line-height: 1.7; font-weight: 500; word-break: keep-all; }
 
 /* HUD Bottom */
 .hud-bottom { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; margin-bottom: 20px; }

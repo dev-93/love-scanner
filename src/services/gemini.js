@@ -43,13 +43,16 @@ export const generateLoveResult = async (probability, faceData = null, harmonySc
     - 감제된 표정: ${faceData?.expression || "알 수 없음"}
     - 성별: ${faceData?.gender === 'male' ? '남성' : '여성'} (${Math.round(faceData?.genderProbability * 100)}% 확신)
     - 추정 나이: ${faceData?.age || "알 수 없음"}세
+    - 얼굴 구조 데이터: 68개의 랜드마크 좌표 기반 (턱선, 이목구비 비율 분석 포함)
     ${harmonyLine}
 
     [출력 규칙]
-    - 반드시 '[확률]% | [스타일] | [관상/궁합 팁]' 형식으로만 출력하라.
-    - 확률은 ${probability}% 기준 ±5% 범위 내 소수점 한 자리.
-    - 스타일: 4-5자 내외의 연애 캐릭터 (예: '직진 연하남', '차도녀 스타일', '순애보 댕댕이' 등, 성별에 어울리는 명칭 권장)
-    - 관상/궁합 팁: 분석된 성별과 인상에 기반한 관상학적 조언이나 잘 맞는 이성 타입을 추천 (딱 1문장, 30자 이내).
+    - 반드시 '[확률]% | [나의 스타일] | [어울리는 상대] | [관상 총평]' 형식으로만 출력하라.
+    - 확률: ${probability}% 기준 ±3% 범위 내.
+    - 나의 스타일: 4-5자 (예: '냉철한 도시남', '상상력 풍부한 예술가')
+    - 어울리는 상대: 4-5자 (예: '햇살 같은 댕댕이', '차분한 지성인')
+    - 관상 총평: 얼굴 구조(턱선, 이마, 눈매 등)를 기반으로 한 관상 분석을 제공하되, 사용자가 살짝 '킹받을(Teasing)' 수 있도록 위트 있고 뼈 때리는 농담을 섞어 출력하라. (예: '그 눈빛은 연애보다 혼자 거울 보는 시간이 더 많을 상', '턱선이 날카로운 걸 보니 연애할 때도 고집 좀 부리겠군요'). 
+    - 주의: 욕설이나 도가 넘는 비하는 절대 금지. 전문적인 관상학 용어(예: 하정, 중정, 복덕궁 등)를 섞어쓰면 더 킹받고 전문적이다. 딱 1문장, 45자 이내로 작성.
     - 모델: gemini-2.5-flash
   `;
 
@@ -69,7 +72,7 @@ export const generateLoveResult = async (probability, faceData = null, harmonySc
     const data = await response.json();
     const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     
-    return responseText.trim() || `${probability}% | 매력적인 분석가 | 당신의 미소는 상대방의 마음을 녹이는 마법입니다.`;
+    return responseText.trim() || `${probability}% | 지적인 분석가 | 따뜻한 포용주의자 | 조화로운 이목구비에서 차분하고 신중한 연애 스타일이 느껴집니다.`;
   } catch (error) {
     console.warn("Gemini 2.5 Flash 호출 실패 (폴백 가동):", error.message);
     
@@ -78,6 +81,6 @@ export const generateLoveResult = async (probability, faceData = null, harmonySc
     const randomMent = pool[Math.floor(Math.random() * pool.length)];
     const randomPct = (Math.random() * 20 + 0.1).toFixed(1);
 
-    return `${randomPct}% | 차분한 관찰자 | ${randomMent}`;
+    return `${randomPct}% | 차분한 관찰자 | 열정적인 활동가 | ${randomMent}`;
   }
 };
