@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@vercel/analytics": "^2.0.1",
     "@vladmandic/face-api": "^1.7.15",
     "vue": "^3.5.30"
   },
