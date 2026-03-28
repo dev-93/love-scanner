@@ -69,6 +69,23 @@ const handler = async (req, res) => {
     res.status(200).json({ status: "Success" });
   } catch (error) {
     console.error("🔥 마케터 봇 에러:", error);
+
+    // 에러 발생 시 텔레그램 알림 시도
+    try {
+      const telegramUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+      await fetch(telegramUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: process.env.TELEGRAM_CHAT_ID,
+          text: `💥 *[Love Scanner Marketer] 에러 발생*\n오류 내용: ${error.message}`,
+          parse_mode: "Markdown"
+        })
+      });
+    } catch (tgErr) {
+      console.error("에러 알림 전송 실패:", tgErr.message);
+    }
+
     res.status(500).json({ error: error.message });
   }
 };
