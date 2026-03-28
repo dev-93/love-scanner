@@ -36,22 +36,24 @@ export const generateLoveResult = async (probability, faceData = null, harmonySc
     : '';
 
   const prompt = `
-    너는 표정을 분석해 연애 확률을 판정하는 AI 스캐너다.
+    너는 관상(Physiognomy)과 표정을 분석해 연애 확률과 스타일을 판정하는 AI 전문가다.
     [분석 데이터]
-    - 연애 확률: ${probability}%
+    - 기본 연애 확률: ${probability}%
     - 태도: ${smileState}
-    - 감지된 표정: ${faceData?.expression || "알 수 없음"}
+    - 감제된 표정: ${faceData?.expression || "알 수 없음"}
+    - 성별: ${faceData?.gender === 'male' ? '남성' : '여성'} (${Math.round(faceData?.genderProbability * 100)}% 확신)
+    - 추정 나이: ${faceData?.age || "알 수 없음"}세
     ${harmonyLine}
 
     [출력 규칙]
-    - 반드시 '[확률]% | [멘트]' 형식으로만 출력.
-    - 확률은 ${probability}% 기준 ±5% 범위 내 소수점 한 자리로 표현.
-    - 멘트는 딱 1문장, 20자 이내로 정중하게.
+    - 반드시 '[확률]% | [스타일] | [관상/궁합 팁]' 형식으로만 출력하라.
+    - 확률은 ${probability}% 기준 ±5% 범위 내 소수점 한 자리.
+    - 스타일: 4-5자 내외의 연애 캐릭터 (예: '직진 연하남', '차도녀 스타일', '순애보 댕댕이' 등, 성별에 어울리는 명칭 권장)
+    - 관상/궁합 팁: 분석된 성별과 인상에 기반한 관상학적 조언이나 잘 맞는 이성 타입을 추천 (딱 1문장, 30자 이내).
     - 모델: gemini-2.5-flash
   `;
 
   try {
-    // 💡 Vite 빌드 에러 해결을 위해 SDK를 쓰지 않고 표준 fetch로 직접 호출 (gemini-2.5-flash 전용)
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     
     const response = await fetch(url, {
@@ -62,23 +64,20 @@ export const generateLoveResult = async (probability, faceData = null, harmonySc
       })
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP Error: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
     const data = await response.json();
     const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     
-    return responseText.trim() || `${probability}% | 매력적인 분석 결과입니다.`;
+    return responseText.trim() || `${probability}% | 매력적인 분석가 | 당신의 미소는 상대방의 마음을 녹이는 마법입니다.`;
   } catch (error) {
     console.warn("Gemini 2.5 Flash 호출 실패 (폴백 가동):", error.message);
     
-    // 로컬 폴백 (최종 방어선)
     const category = faceData ? (faceData.wasSmiling ? 'forcedSmile' : 'unsmiling') : 'default';
     const pool = FALLBACK_MENOTS[category] || FALLBACK_MENOTS.default;
     const randomMent = pool[Math.floor(Math.random() * pool.length)];
     const randomPct = (Math.random() * 20 + 0.1).toFixed(1);
 
-    return `${randomPct}% | ${randomMent}`;
+    return `${randomPct}% | 차분한 관찰자 | ${randomMent}`;
   }
 };

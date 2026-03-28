@@ -14,7 +14,8 @@ const loadModels = async () => {
     await Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
       faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
-      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)
     ]);
     isModelLoaded.value = true;
     console.log("Face-api models loaded.");
@@ -47,10 +48,11 @@ const startCamera = async () => {
 const detectFace = async () => {
   if (!videoRef.value || !isModelLoaded.value) return null;
   
+  // 성별 및 나이 분석 포함
   const detection = await faceapi.detectSingleFace(
     videoRef.value, 
     new faceapi.TinyFaceDetectorOptions()
-  ).withFaceLandmarks().withFaceExpressions();
+  ).withFaceLandmarks().withFaceExpressions().withAgeAndGender();
 
   
   if (!detection) return null;
@@ -63,6 +65,9 @@ const detectFace = async () => {
     expression: topExpression[0], // 'happy', 'sad', 'angry' 등
     probability: (topExpression[1] * 100).toFixed(1),
     landmarks: detection.landmarks.positions, // 68개 좌표 배열 (대칭 분석용)
+    gender: detection.gender, // 'male' or 'female'
+    genderProbability: detection.genderProbability,
+    age: Math.round(detection.age)
   };
 };
 
