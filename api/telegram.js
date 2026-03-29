@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       4. 모델: gemini-2.5-flash
     `;
 
-    const geminiUrl = \`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}\`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     
     // Gemini 직접 호출
     const geminiResp = await fetch(geminiUrl, {
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
 
     // 팀장님께 텔레그램으로 답장
     if (aiMessage) {
-      const telegramUrl = \`https://api.telegram.org/bot\${botToken}/sendMessage\`;
+      const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
       await fetch(telegramUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
