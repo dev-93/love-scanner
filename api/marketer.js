@@ -54,7 +54,7 @@ const handler = async (req, res) => {
 
     if (!aiMessage) throw new Error("분석 메시지 생성 실패");
 
-    // 텔레그램 전송
+    /* 텔레그램 전송 (사용자의 요청으로 비활성화됨)
     const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
     await fetch(telegramUrl, {
       method: "POST",
@@ -65,12 +65,13 @@ const handler = async (req, res) => {
         parse_mode: "Markdown"
       })
     });
+    */
 
     res.status(200).json({ status: "Success" });
   } catch (error) {
     console.error("🔥 마케터 봇 에러:", error);
 
-    // 에러 발생 시 텔레그램 알림 시도
+    /* 에러 알림 전송 (비활성화됨)
     try {
       const telegramUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
       await fetch(telegramUrl, {
@@ -85,6 +86,7 @@ const handler = async (req, res) => {
     } catch (tgErr) {
       console.error("에러 알림 전송 실패:", tgErr.message);
     }
+    */
 
     res.status(500).json({ error: error.message });
   }
