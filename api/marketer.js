@@ -1,12 +1,16 @@
 // api/marketer.js
 
 const handler = async (req, res) => {
+  // 텔레그램 전송을 원치 않는다는 사용자 요청에 따라 기능을 완전히 비활성화합니다.
+  return res.status(200).json({ status: "Disabled", message: "텔레그램 마케팅 보고 기능이 비활성화되었습니다." });
+  
   try {
     const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
     const marketerToken = process.env.MARKETER_API_TOKEN;
     const requestToken = req.headers['x-marketer-token'];
+
 
     if (!apiKey || !botToken || !chatId) {
       return res.status(500).json({ error: "환경변수 설정이 필요합니다." });
