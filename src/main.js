@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
+import router from './router/index.js'
 import { inject } from '@vercel/analytics' // ⬅️ 추가
 
 // 🔎 레퍼럴(유입경로) 추적 로직 추가
@@ -12,6 +13,6 @@ if (referrer) {
 }
 
 // 📊 Vercel Analytics 활성화
-inject(); 
+inject();
 
-createApp(App).mount('#app')
+createApp(App).use(router).mount('#app')
