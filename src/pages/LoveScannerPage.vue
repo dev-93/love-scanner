@@ -173,9 +173,9 @@ const resetScan = () => {
 
 .mobile-viewport {
   position: relative;
-  width: 100%;
-  max-width: 420px;
+  height: 100vh;
   aspect-ratio: 9/16;
+  max-width: 100vw;
   background: #000;
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
   overflow: hidden;

@@ -27,10 +27,14 @@ const loadModels = async () => {
 const startCamera = async () => {
   permissionDenied.value = false;
   try {
+    // PC에서는 가로 비율, 모바일에서는 세로 비율
+    const isMobile = window.innerWidth <= 768;
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { 
         facingMode: 'user',
-        aspectRatio: { ideal: 9/16 } // 모바일 세로 비율 최적화
+        aspectRatio: { ideal: isMobile ? 9/16 : 16/9 },
+        width: { ideal: isMobile ? 720 : 1280 },
+        height: { ideal: isMobile ? 1280 : 720 }
       },
       audio: false
     });
@@ -140,7 +144,7 @@ defineExpose({ startCamera, detectFace, takePhoto, isModelLoaded, permissionDeni
 .video-preview {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* 줌 현상 해결을 위해 contain으로 변경 */
+  object-fit: cover; /* 컨테이너를 꽉 채움 */
   transform: scaleX(-1); /* 셀카 모드 좌우 반전 */
   background: #000;
 }
