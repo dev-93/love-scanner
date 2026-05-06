@@ -170,4 +170,10 @@ defineExpose({ startCamera, detectFace, takePhoto, isModelLoaded, permissionDeni
   opacity: 0.7;
   line-height: 1.6;
 }
+
+@media (max-width: 768px) {
+  .video-preview {
+    object-fit: contain; /* 모바일에서는 확대 없이 비율 유지 */
+  }
+}
 </style>
